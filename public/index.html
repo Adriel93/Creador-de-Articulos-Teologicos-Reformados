@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Creador de Artículos — Blog Reformado</title>
+  <link rel="icon" href="/icono.ico" type="image/x-icon">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<div class="header">
+  <div class="cross-divider">
+    <span class="cross-icon">✝</span>
+  </div>
+  <h1>Creador de Artículos<br>para Blog Reformado</h1>
+  <p class="subtitle">Doctrina Reformada · Calvinismo · Posmilenarismo</p>
+  <p class="scripture">«Para la gloria de Dios solamente» — Soli Deo Gloria</p>
+</div>
+
+<div class="card">
+  <div class="section-label">Configuración del Artículo</div>
+
+  <div class="row-2">
+    <div class="field-group">
+      <label for="categoria">Categoría</label>
+      <select id="categoria"></select>
+    </div>
+
+    <div class="field-group">
+      <label for="longitud">Longitud del artículo</label>
+      <select id="longitud">
+        <option value="corto">Corto (~600 palabras)</option>
+        <option value="medio" selected>Medio (~1200 palabras)</option>
+        <option value="largo">Largo (~2000 palabras)</option>
+        <option value="extenso">Extenso (~3000 palabras)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="field-group">
+    <label for="tema">Tema o enfoque específico <span style="font-weight:400;color:#8a6a30">(opcional)</span></label>
+    <input type="text" id="tema" placeholder="Ej: La elección incondicional según Romanos 9, El pacto de gracia...">
+    <p class="helper-text">Si lo dejas vacío, la IA elegirá un tema relevante para la categoría seleccionada.</p>
+  </div>
+
+  <div class="field-group">
+    <label>Tono del artículo</label>
+    <div class="tone-grid" id="toneGrid"></div>
+  </div>
+
+  <div class="field-group">
+    <label for="audiencia">Audiencia</label>
+    <select id="audiencia"></select>
+  </div>
+
+  <div class="field-group">
+    <label for="referencias">Referencias o confesiones a mencionar <span style="font-weight:400;color:#8a6a30">(opcional)</span></label>
+    <input type="text" id="referencias" placeholder="Ej: Confesión de Westminster, Catecismo de Heidelberg, Dort...">
+  </div>
+
+  <div class="field-group">
+    <label for="instrucciones">Instrucciones adicionales <span style="font-weight:400;color:#8a6a30">(opcional)</span></label>
+    <textarea id="instrucciones" placeholder="Ej: Incluir ilustración histórica de la Reforma, comparar con el arminianismo, usar lenguaje accesible..."></textarea>
+  </div>
+
+  <div class="ornament">· · ✦ · ·</div>
+
+  <!-- CONFIGURACIÓN WEBHOOK -->
+  <div class="webhook-config-section">
+    <div class="webhook-header">
+      <label class="webhook-toggle">
+        <input type="checkbox" id="webhookToggle" onchange="toggleWebhook()">
+        <span class="toggle-switch"></span>
+        <span class="toggle-label">Enviar a n8n Webhook</span>
+      </label>
+    </div>
+    
+    <div class="webhook-inputs" id="webhookInputs" style="display: none;">
+      <div class="field-group">
+        <label for="webhookUrl">URL del Webhook de n8n</label>
+        <input type="url" id="webhookUrl" placeholder="https://your-instance.n8n.cloud/webhook/..." onblur="guardarConfigWebhook()">
+        <p class="helper-text">Copia la URL de tu webhook de n8n aquí. Los datos se enviarán automáticamente al generar.</p>
+      </div>
+      <div class="webhook-status" id="webhookStatus" style="display: none;"></div>
+    </div>
+  </div>
+
+  <div class="ornament">· · ✦ · ·</div>
+  <button class="btn-generate" onclick="generarArticulo()">
+    ✝ Generar Artículo con IA
+  </button>
+
+  <div class="error-msg" id="errorMsg"></div>
+</div>
+
+<div class="loading-spinner" id="loadingSpinner">
+  <span class="spinner-cross">✝</span>
+  Meditando en las Escrituras y generando el artículo…
+</div>
+
+<div class="output-card" id="outputCard">
+  <div class="section-label">Resultado Generado</div>
+
+  <div class="output-tab-bar">
+    <div class="output-tab active" onclick="switchTab('articulo', this)">📄 Artículo</div>
+    <div class="output-tab" onclick="switchTab('imagen', this)">🖼️ Prompt de Imagen</div>
+    <div class="output-tab" onclick="switchTab('n8n', this)">⚙️ Detalles Técnicos</div>
+  </div>
+
+  <div class="output-pane active" id="pane-articulo">
+    <div class="output-title" id="articuloTitulo"></div>
+    <div class="output-meta" id="articuloMeta"></div>
+    <div class="article-body" id="articuloCuerpo"></div>
+    <button class="copy-btn" onclick="copiarTexto('articuloCompleto')">Copiar artículo completo</button>
+  </div>
+
+  <div class="output-pane" id="pane-imagen">
+    <p class="section-label" style="margin-bottom:16px">Imagen Generada</p>
+    <p style="font-size:0.9rem;color:#5a3e1b;margin-bottom:16px;">Imagen generada automáticamente con DALL-E 3 (OpenAI)</p>
+    <div id="imagenGenerada" style="text-align: center; min-height: 400px; display: flex; align-items: center; justify-content: center; color: #8a6a30;">
+      <p>Generando imagen...</p>
+    </div>
+    <p style="font-size:0.9rem;color:#5a3e1b;margin-top:16px;margin-bottom:16px;">Prompt utilizado:</p>
+    <div class="prompt-box" id="promptImagen"></div>
+    <button class="copy-btn" onclick="copiarTexto('promptImagen')">Copiar prompt de imagen</button>
+  </div>
+
+  <div class="output-pane" id="pane-n8n">
+    <p class="section-label" style="margin-bottom:16px">Respuesta JSON completa</p>
+    <p style="font-size:0.9rem;color:#5a3e1b;margin-bottom:20px;">Datos estructurados listos para integración con sistemas externos.</p>
+
+    <div class="n8n-card">
+      <div class="n8n-label">📋 JSON Completo</div>
+      <pre class="n8n-code" id="jsonCompleto"></pre>
+      <button class="copy-btn" onclick="copiarElemento('jsonCompleto')">Copiar JSON</button>
+    </div>
+
+    <div class="n8n-card" style="background:rgba(139,105,20,0.05);border-color:rgba(139,105,20,0.2)">
+      <div class="n8n-label" style="color:var(--gold)">💡 Webhook Sugerido para n8n</div>
+      <pre class="n8n-code">POST https://tu-dominio.vercel.app/api/webhook
+
+Headers:
+  Content-Type: application/json
+  X-Webhook-Secret: (opcional)
+
+Body:
+{
+  "categoria": "doctrina",
+  "tono": "expositivo",
+  "audiencia": "general",
+  "longitud": "medio",
+  "tema": "La soberanía de Dios",
+  "referencias": "Confesión de Westminster",
+  "instrucciones": ""
+}
+      </pre>
+    </div>
+  </div>
+</div>
+
+<!-- SECCIÓN DE DONACIONES -->
+<div class="donations-container">
+  <button class="donations-toggle-btn" onclick="toggleDonations()" title="Apoyar el ministerio">
+    <span class="donations-icon">❤️</span>
+    <span class="donations-label">Apoyar</span>
+  </button>
+</div>
+
+<!-- MODAL DE DONACIONES -->
+<div class="donations-modal" id="donationsModal">
+  <div class="donations-modal-content">
+    <button class="close-btn" onclick="closeDonations()">✕</button>
+    
+    <div class="donations-header">
+      <h2>Apoya este Ministerio</h2>
+      <p>Tu contribución nos ayuda a crear contenido reformado de calidad</p>
+    </div>
+
+    <div class="donations-methods">
+      <!-- BITCOIN -->
+      <div class="donation-method">
+        <div class="method-header" onclick="toggleMethod('bitcoin', this)">
+          <span class="method-title">
+            <span class="method-icon">₿</span>
+            Bitcoin
+          </span>
+          <span class="method-arrow">▼</span>
+        </div>
+        <div class="method-content" id="bitcoin-content" style="display: none;">
+          <img src="/images/qr_btc.png" alt="QR Code Bitcoin" class="qr-code">
+          <p class="method-description">Escanea el código QR con tu billetera de Bitcoin o copia la dirección</p>
+        </div>
+      </div>
+
+      <!-- PAYPAL -->
+      <div class="donation-method">
+        <div class="method-header" onclick="toggleMethod('paypal', this)">
+          <span class="method-title">
+            <span class="method-icon">🅿️</span>
+            PayPal
+          </span>
+          <span class="method-arrow">▼</span>
+        </div>
+        <div class="method-content" id="paypal-content" style="display: none;">
+          <img src="/images/qr_paypal.png" alt="QR Code PayPal" class="qr-code">
+          <p class="method-description">Escanea el código QR o usa PayPal directamente</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="donations-footer">
+      <p class="scripture-quote">«Cada uno dé como propuso en su corazón» — 2 Corintios 9:7</p>
+      <p class="gratitude-text">Gracias por tu generosidad y apoyo al ministerio. ✝</p>
+    </div>
+  </div>
+</div>
+
+<p class="soli-deo">Soli Deo Gloria · Sola Scriptura · Sola Gratia · Sola Fide · Solus Christus</p>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
